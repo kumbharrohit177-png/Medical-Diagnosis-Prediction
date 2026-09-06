@@ -1,0 +1,9 @@
+python-interpreter-path = "C:/Users/kumbh/AppData/Local/Programs/Python/Python313/python.exe"
+
+search-path = [
+    ".",
+    "notebooks",
+    "C:/Users/kumbh/AppData/Local/Programs/Python/Python313/Lib/site-packages",
+    "C:/Users/kumbh/AppData/Roaming/Python/Python313/site-packages",
+    ".venv/Lib/site-packages"
+]
