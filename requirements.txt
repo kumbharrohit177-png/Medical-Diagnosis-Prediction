@@ -8,6 +8,7 @@ seaborn>=0.13.0
 
 # Software / UI & Deployment (Umar)
 streamlit>=1.30.0
+plotly>=5.18.0
 
 # Optional Web Framework
 Flask>=3.0.0
