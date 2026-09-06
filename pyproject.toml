@@ -7,3 +7,6 @@ search-path = [
     "C:/Users/kumbh/AppData/Roaming/Python/Python313/site-packages",
     ".venv/Lib/site-packages"
 ]
+
+[tool.pyrefly.errors]
+untyped-import = "ignore"
