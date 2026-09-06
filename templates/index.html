@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardioSense AI — Medical Diagnosis & Risk Prediction</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="background-glow"></div>
+    
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                        <path d="M12 5v14"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>CardioSense AI</h1>
+                    <p class="subtitle">Clinical Diagnostic & Heart Disease Risk Intelligence</p>
+                </div>
+            </div>
+            <div class="model-badge">
+                <span class="badge-dot"></span>
+                <span>Active Model: <strong>{{ metrics.best_model_name }}</strong> ({{ "%.1f"|format(metrics.best_metrics.test_accuracy * 100) }}% Accuracy)</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Preset Demo Buttons -->
+        <section class="preset-banner">
+            <span>Quick Test Profiles:</span>
+            <button type="button" class="btn-chip" onclick="loadProfile('healthy')">Normal / Low Risk Profile</button>
+            <button type="button" class="btn-chip btn-chip-risk" onclick="loadProfile('risk')">Elevated Cardiac Risk Profile</button>
+        </section>
+
+        <div class="grid-layout">
+            <!-- Form Section -->
+            <section class="card form-card">
+                <div class="card-header">
+                    <h2>Patient Clinical Parameters</h2>
+                    <p>Enter patient vitals and diagnostic test measurements</p>
+                </div>
+
+                <form id="diagnosisForm" method="POST" action="/predict">
+                    <div class="form-grid">
+                        <!-- Demographics -->
+                        <div class="form-group">
+                            <label for="age">Age (years)</label>
+                            <input type="number" id="age" name="age" min="18" max="100" value="{{ form_data.age if form_data else 55 }}" required>
+                            <small>Patient age in years</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sex">Biological Sex</label>
+                            <select id="sex" name="sex" required>
+                                <option value="1" {% if form_data and form_data.sex == '1' %}selected{% endif %}>Male (1)</option>
+                                <option value="0" {% if form_data and form_data.sex == '0' %}selected{% endif %}>Female (0)</option>
+                            </select>
+                            <small>Biological sex</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cp">Chest Pain Type</label>
+                            <select id="cp" name="cp" required>
+                                <option value="1" {% if form_data and form_data.cp == '1' %}selected{% endif %}>1: Typical Angina</option>
+                                <option value="2" {% if form_data and form_data.cp == '2' %}selected{% endif %}>2: Atypical Angina</option>
+                                <option value="3" {% if form_data and form_data.cp == '3' %}selected{% endif %}>3: Non-Anginal Pain</option>
+                                <option value="4" {% if not form_data or form_data.cp == '4' %}selected{% endif %}>4: Asymptomatic</option>
+                            </select>
+                            <small>Reported pain sensation</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="trestbps">Resting BP (mm Hg)</label>
+                            <input type="number" id="trestbps" name="trestbps" min="80" max="220" value="{{ form_data.trestbps if form_data else 130 }}" required>
+                            <small>Normal range: 90–120</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="chol">Serum Cholesterol (mg/dl)</label>
+                            <input type="number" id="chol" name="chol" min="100" max="600" value="{{ form_data.chol if form_data else 240 }}" required>
+                            <small>Desirable: &lt; 200 mg/dl</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fbs">Fasting Blood Sugar</label>
+                            <select id="fbs" name="fbs" required>
+                                <option value="0" {% if not form_data or form_data.fbs == '0' %}selected{% endif %}>&le; 120 mg/dl (Normal)</option>
+                                <option value="1" {% if form_data and form_data.fbs == '1' %}selected{% endif %}>&gt; 120 mg/dl (Elevated)</option>
+                            </select>
+                            <small>Fasting glucose marker</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="restecg">Resting ECG Results</label>
+                            <select id="restecg" name="restecg" required>
+                                <option value="0" {% if not form_data or form_data.restecg == '0' %}selected{% endif %}>0: Normal</option>
+                                <option value="1" {% if form_data and form_data.restecg == '1' %}selected{% endif %}>1: ST-T Wave Abnormality</option>
+                                <option value="2" {% if form_data and form_data.restecg == '2' %}selected{% endif %}>2: LV Hypertrophy</option>
+                            </select>
+                            <small>Electrocardiogram baseline</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="thalach">Max Heart Rate (bpm)</label>
+                            <input type="number" id="thalach" name="thalach" min="60" max="230" value="{{ form_data.thalach if form_data else 150 }}" required>
+                            <small>Peak during exercise test</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="exang">Exercise Induced Angina</label>
+                            <select id="exang" name="exang" required>
+                                <option value="0" {% if not form_data or form_data.exang == '0' %}selected{% endif %}>No (0)</option>
+                                <option value="1" {% if form_data and form_data.exang == '1' %}selected{% endif %}>Yes (1)</option>
+                            </select>
+                            <small>Angina triggered by exertion</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="oldpeak">ST Depression (oldpeak)</label>
+                            <input type="number" step="0.1" id="oldpeak" name="oldpeak" min="0" max="8" value="{{ form_data.oldpeak if form_data else 1.0 }}" required>
+                            <small>Exertion-induced ST shift</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="slope">ST Segment Slope</label>
+                            <select id="slope" name="slope" required>
+                                <option value="1" {% if form_data and form_data.slope == '1' %}selected{% endif %}>1: Upsloping</option>
+                                <option value="2" {% if not form_data or form_data.slope == '2' %}selected{% endif %}>2: Flat</option>
+                                <option value="3" {% if form_data and form_data.slope == '3' %}selected{% endif %}>3: Downsloping</option>
+                            </select>
+                            <small>Peak ST slope profile</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ca">Major Vessels Colored (0–3)</label>
+                            <select id="ca" name="ca" required>
+                                <option value="0" {% if not form_data or form_data.ca == '0' %}selected{% endif %}>0 Vessels</option>
+                                <option value="1" {% if form_data and form_data.ca == '1' %}selected{% endif %}>1 Vessel</option>
+                                <option value="2" {% if form_data and form_data.ca == '2' %}selected{% endif %}>2 Vessels</option>
+                                <option value="3" {% if form_data and form_data.ca == '3' %}selected{% endif %}>3 Vessels</option>
+                            </select>
+                            <small>Fluoroscopy vessel count</small>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="thal">Thalassemia Defect</label>
+                            <select id="thal" name="thal" required>
+                                <option value="3" {% if not form_data or form_data.thal == '3' %}selected{% endif %}>3: Normal Blood Flow</option>
+                                <option value="6" {% if form_data and form_data.thal == '6' %}selected{% endif %}>6: Fixed Defect (Non-reversible)</option>
+                                <option value="7" {% if form_data and form_data.thal == '7' %}selected{% endif %}>7: Reversible Defect</option>
+                            </select>
+                            <small>Nuclear cardiology scan defect</small>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="btnDiagnose">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="m21 21-4.3-4.3"/>
+                            </svg>
+                            Generate Clinical Diagnosis
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Results Section -->
+            <section class="card result-card">
+                <div class="card-header">
+                    <h2>Diagnostic Assessment</h2>
+                    <p>AI-driven clinical inference & recommendations</p>
+                </div>
+
+                {% if result %}
+                <div class="result-content animate-fade">
+                    <div class="status-banner status-{{ result.risk_level|lower }}">
+                        <div class="status-icon">
+                            {% if result.is_positive %}
+                            ⚠️
+                            {% else %}
+                            ✅
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h3 class="status-title">{{ result.diagnosis_title }}</h3>
+                            <p class="status-desc">{{ result.diagnosis_text }}</p>
+                        </div>
+                    </div>
+
+                    <div class="metrics-grid">
+                        <div class="metric-box">
+                            <span class="metric-label">Disease Probability</span>
+                            <span class="metric-val risk-val">{{ "%.1f"|format(result.probability * 100) }}%</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ result.probability * 100 }}%;"></div>
+                            </div>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Risk Category</span>
+                            <span class="metric-val text-{{ result.risk_level|lower }}">{{ result.risk_level }} Risk</span>
+                        </div>
+                    </div>
+
+                    <div class="advice-box">
+                        <h4>Clinical Action & Recommendations:</h4>
+                        <ul>
+                            {% for rec in result.recommendations %}
+                            <li>{{ rec }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">🩺</div>
+                    <h3>No Diagnosis Generated Yet</h3>
+                    <p>Fill out the clinical parameters on the left or use a quick test profile to run the diagnostic pipeline.</p>
+                </div>
+                {% endif %}
+
+                <!-- Model Stats Footer -->
+                <div class="model-stats-footer">
+                    <h4>Model Benchmark (UCI Cleveland Test Set):</h4>
+                    <div class="benchmark-grid">
+                        <div>
+                            <span class="bm-label">Test Accuracy</span>
+                            <span class="bm-val">{{ "%.1f"|format(metrics.best_metrics.test_accuracy * 100) }}%</span>
+                        </div>
+                        <div>
+                            <span class="bm-label">F1-Score</span>
+                            <span class="bm-val">{{ "%.1f"|format(metrics.best_metrics.f1_score * 100) }}%</span>
+                        </div>
+                        <div>
+                            <span class="bm-label">Sensitivity (Recall)</span>
+                            <span class="bm-val">{{ "%.1f"|format(metrics.best_metrics.recall * 100) }}%</span>
+                        </div>
+                        <div>
+                            <span class="bm-label">ROC-AUC</span>
+                            <span class="bm-val">{{ "%.3f"|format(metrics.best_metrics.roc_auc) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <p>Lead: <strong>Rohit (ML & Integration Lead)</strong> | Medical Diagnosis Prediction Project | Powered by Scikit-Learn & Flask</p>
+    </footer>
+
+    <script>
+        function loadProfile(type) {
+            if (type === 'healthy') {
+                document.getElementById('age').value = 45;
+                document.getElementById('sex').value = '0';
+                document.getElementById('cp').value = '2';
+                document.getElementById('trestbps').value = 115;
+                document.getElementById('chol').value = 190;
+                document.getElementById('fbs').value = '0';
+                document.getElementById('restecg').value = '0';
+                document.getElementById('thalach').value = 172;
+                document.getElementById('exang').value = '0';
+                document.getElementById('oldpeak').value = '0.0';
+                document.getElementById('slope').value = '1';
+                document.getElementById('ca').value = '0';
+                document.getElementById('thal').value = '3';
+            } else if (type === 'risk') {
+                document.getElementById('age').value = 65;
+                document.getElementById('sex').value = '1';
+                document.getElementById('cp').value = '4';
+                document.getElementById('trestbps').value = 160;
+                document.getElementById('chol').value = 286;
+                document.getElementById('fbs').value = '1';
+                document.getElementById('restecg').value = '2';
+                document.getElementById('thalach').value = 108;
+                document.getElementById('exang').value = '1';
+                document.getElementById('oldpeak').value = '2.8';
+                document.getElementById('slope').value = '2';
+                document.getElementById('ca').value = '3';
+                document.getElementById('thal').value = '7';
+            }
+        }
+    </script>
+</body>
+</html>
