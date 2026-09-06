@@ -202,7 +202,7 @@
                             <span class="metric-label">Disease Probability</span>
                             <span class="metric-val risk-val">{{ "%.1f"|format(result.probability * 100) }}%</span>
                             <div class="progress-bar">
-                                <div class="progress-fill" style="width: {{ result.probability * 100 }}%;"></div>
+                                <div class="progress-fill" data-progress="{{ '%.1f'|format(result.probability * 100) }}"></div>
                             </div>
                         </div>
                         <div class="metric-box">
@@ -290,6 +290,13 @@
                 document.getElementById('thal').value = '7';
             }
         }
+
+        // Apply progress-fill width dynamically
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.progress-fill[data-progress]').forEach(el => {
+                el.style.width = el.getAttribute('data-progress') + '%';
+            });
+        });
     </script>
 </body>
 </html>

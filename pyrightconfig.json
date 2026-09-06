@@ -1,0 +1,45 @@
+{
+  "include": [
+    ".",
+    "notebooks"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    ".venv",
+    "venv"
+  ],
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonPath": ".venv/Scripts/python.exe",
+  "extraPaths": [
+    ".venv/Lib/site-packages",
+    "C:/Users/kumbh/AppData/Local/Programs/Python/Python313/Lib/site-packages",
+    "C:/Users/kumbh/AppData/Roaming/Python/Python313/site-packages",
+    ".",
+    "notebooks"
+  ],
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "pythonPath": ".venv/Scripts/python.exe",
+      "extraPaths": [
+        ".venv/Lib/site-packages",
+        "C:/Users/kumbh/AppData/Local/Programs/Python/Python313/Lib/site-packages",
+        "C:/Users/kumbh/AppData/Roaming/Python/Python313/site-packages",
+        "."
+      ]
+    },
+    {
+      "root": "notebooks",
+      "pythonPath": "../.venv/Scripts/python.exe",
+      "extraPaths": [
+        "../.venv/Lib/site-packages",
+        "C:/Users/kumbh/AppData/Local/Programs/Python/Python313/Lib/site-packages",
+        "C:/Users/kumbh/AppData/Roaming/Python/Python313/site-packages",
+        "..",
+        "."
+      ]
+    }
+  ]
+}
