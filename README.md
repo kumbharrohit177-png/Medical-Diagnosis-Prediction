@@ -233,6 +233,9 @@ Medical-Diagnosis-Prediction/
 ├── notebooks/
 │   ├── eda_and_naive_bayes.ipynb    # EDA & Naive Bayes analysis by Om
 │   └── pyrefly.toml                 # Notebook language server config
+├── .streamlit/
+│   └── config.toml                  # Streamlit dark theme & server configuration
+├── streamlit_app.py                 # Streamlit Multi-Page Interactive Dashboard by Umar
 ├── app.py                           # Flask Web Server & REST API
 ├── train_model.py                   # Complete ML Pipeline (Parts 1, 2, 3)
 ├── model_service.py                 # Core inference & evaluation helpers
@@ -278,10 +281,19 @@ python train_model.py
 python test_integration.py
 ```
 
-### 5. Launch Web Portal
+### 5. Launch Interfaces
+
+#### **Option A: Streamlit Interactive Dashboard (by Umar)**
+```bash
+streamlit run streamlit_app.py
+```
+*Access via browser:* `http://localhost:8501`
+
+#### **Option B: Flask Web Portal & REST API (by Rohit)**
 ```bash
 python app.py
 ```
+*Access via browser:* `http://127.0.0.1:5000`
 
 ---
 
