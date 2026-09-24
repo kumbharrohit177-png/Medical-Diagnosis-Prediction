@@ -1,7 +1,6 @@
 """
-CardioSense AI - Medical Diagnosis Prediction System
-Author: Umar (Software/UI & Deployment Lead)
-Teammates: Rohit (ML Lead), Om (Data Analysis Lead)
+CardioSense AI - Clinical Cardiovascular Diagnostic Intelligence Platform
+Lead Team: Rohit (ML & Integration), Om (EDA & Naive Bayes), Umar (UI & Deployment)
 Dataset: UCI Cleveland Heart Disease Dataset (303 patient records, 13 biomarkers)
 """
 
@@ -10,6 +9,7 @@ import json
 import streamlit as st
 import pandas as pd
 import numpy as np
+
 try:
     import plotly.graph_objects as go
     import plotly.express as px
@@ -25,135 +25,128 @@ import model_service
 # 1. PAGE CONFIGURATION & THEME STYLING
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="CardioSense AI | Heart Disease Prediction",
+    page_title="CardioSense AI | Cardiovascular Decision Support",
     page_icon="🫀",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom High-End Medical Dark & Clean CSS
 CUSTOM_CSS = """
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
 
     html, body, [class*="css"] {
-        font-family: 'Outfit', 'Inter', sans-serif;
+        font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
     }
 
-    /* Gradient Brand Accent Header */
+    /* Modern Background & Container Tweaks */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+        max-width: 1200px;
+    }
+
+    /* Gradient Brand Title */
     .brand-title {
-        background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
+        font-family: 'Outfit', sans-serif;
+        background: linear-gradient(135deg, #38BDF8 0%, #818CF8 50%, #C084FC 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-size: 2.6rem;
+        font-size: 2.5rem;
         font-weight: 800;
         letter-spacing: -0.02em;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.25rem;
     }
 
     .brand-subtitle {
-        color: #94a3b8;
-        font-size: 1.1rem;
+        color: #94A3B8;
+        font-size: 1.05rem;
         font-weight: 400;
         margin-bottom: 1.5rem;
+        line-height: 1.5;
     }
 
-    /* Glassmorphism Metric / Feature Cards */
+    /* Glassmorphic Metric Cards */
     .metric-card {
         background: rgba(30, 41, 59, 0.7);
-        border: 1px solid rgba(148, 163, 184, 0.15);
+        border: 1px solid rgba(148, 163, 184, 0.16);
         border-radius: 14px;
         padding: 1.25rem 1.4rem;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
-        backdrop-filter: blur(8px);
-        transition: transform 0.2s ease, border-color 0.2s ease;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(12px);
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }
     .metric-card:hover {
-        transform: translateY(-2px);
-        border-color: rgba(99, 102, 241, 0.4);
+        transform: translateY(-3px);
+        border-color: rgba(56, 189, 248, 0.4);
+        box-shadow: 0 14px 30px -5px rgba(56, 189, 248, 0.15);
     }
 
     .metric-number {
-        font-size: 2rem;
+        font-family: 'Outfit', sans-serif;
+        font-size: 2.1rem;
         font-weight: 800;
-        color: #f8fafc;
         line-height: 1.1;
     }
 
     .metric-label {
-        font-size: 0.85rem;
-        font-weight: 500;
+        font-size: 0.82rem;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #94a3b8;
-        margin-top: 0.35rem;
+        letter-spacing: 0.06em;
+        color: #94A3B8;
+        margin-top: 0.4rem;
     }
 
-    /* Status Badges */
-    .badge-live {
-        display: inline-flex;
-        align-items: center;
-        background: rgba(16, 185, 129, 0.15);
-        color: #10b981;
-        border: 1px solid rgba(16, 185, 129, 0.3);
-        padding: 0.3rem 0.8rem;
-        border-radius: 9999px;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-
-    .badge-fallback {
-        display: inline-flex;
-        align-items: center;
-        background: rgba(245, 158, 11, 0.15);
-        color: #f59e0b;
-        border: 1px solid rgba(245, 158, 11, 0.3);
-        padding: 0.3rem 0.8rem;
-        border-radius: 9999px;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-
-    /* Alert Banners */
+    /* Clinical Alert Banners */
     .alert-high-risk {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.35) 100%);
-        border: 1px solid rgba(239, 68, 68, 0.5);
-        border-left: 6px solid #ef4444;
-        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(185, 28, 28, 0.3) 100%);
+        border: 1px solid rgba(239, 68, 68, 0.45);
+        border-left: 6px solid #EF4444;
+        border-radius: 14px;
         padding: 1.3rem 1.6rem;
         margin-bottom: 1.5rem;
-        color: #fef2f2;
+        color: #FEF2F2;
+        box-shadow: 0 8px 20px rgba(239, 68, 68, 0.15);
     }
 
     .alert-normal {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(4, 120, 87, 0.35) 100%);
-        border: 1px solid rgba(16, 185, 129, 0.5);
-        border-left: 6px solid #10b981;
-        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(4, 120, 87, 0.3) 100%);
+        border: 1px solid rgba(16, 185, 129, 0.45);
+        border-left: 6px solid #10B981;
+        border-radius: 14px;
         padding: 1.3rem 1.6rem;
         margin-bottom: 1.5rem;
-        color: #f0fdf4;
+        color: #F0FDF4;
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.15);
     }
 
-    /* Team Pills */
-    .team-badge {
-        background: rgba(51, 65, 85, 0.5);
-        border: 1px solid rgba(148, 163, 184, 0.2);
+    /* Section Panels */
+    .content-panel {
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        border-radius: 14px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Team Badges */
+    .team-card {
+        background: rgba(30, 41, 59, 0.65);
+        border: 1px solid rgba(148, 163, 184, 0.15);
         border-radius: 10px;
-        padding: 0.6rem 0.9rem;
+        padding: 0.65rem 0.85rem;
         margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
     }
 
-    /* Stepper / Nav indicators */
-    .nav-active {
-        font-weight: 700;
-        color: #38bdf8 !important;
-    }
-
-    /* Streamlit button enhancements */
+    /* Button Enhancements */
     div.stButton > button {
         border-radius: 10px;
         font-weight: 600;
+        font-size: 0.95rem;
         letter-spacing: 0.02em;
         transition: all 0.2s ease-in-out;
     }
@@ -162,24 +155,23 @@ CUSTOM_CSS = """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. SESSION STATE MANAGEMENT
+# 2. SESSION STATE MANAGEMENT & CLINICAL PRESETS
 # -----------------------------------------------------------------------------
-if "current_page" not in st.session_state:
-    st.session_state.current_page = "Page 1: Home"
-
-# Preset patient profiles for rapid testing
 PRESETS = {
     "Healthy": {
-        "age": 45, "sex": 0, "cp": 2, "trestbps": 115, "chol": 190,
-        "fbs": 0, "restecg": 0, "thalach": 172, "exang": 0,
+        "age": 45, "sex": 0, "cp": 2, "trestbps": 118, "chol": 185,
+        "fbs": 0, "restecg": 0, "thalach": 168, "exang": 0,
         "oldpeak": 0.0, "slope": 1, "ca": 0, "thal": 3
     },
     "Elevated Risk": {
-        "age": 65, "sex": 1, "cp": 4, "trestbps": 160, "chol": 286,
-        "fbs": 1, "restecg": 2, "thalach": 108, "exang": 1,
+        "age": 64, "sex": 1, "cp": 4, "trestbps": 158, "chol": 286,
+        "fbs": 1, "restecg": 2, "thalach": 112, "exang": 1,
         "oldpeak": 2.8, "slope": 2, "ca": 3, "thal": 7
     }
 }
+
+if "current_page" not in st.session_state:
+    st.session_state.current_page = "Page 1: Home"
 
 if "patient_input" not in st.session_state:
     st.session_state.patient_input = PRESETS["Healthy"].copy()
@@ -190,17 +182,28 @@ if "prediction_result" not in st.session_state:
 if "selected_model_name" not in st.session_state:
     st.session_state.selected_model_name = "Random Forest Classifier"
 
-# Helper navigation function
 def navigate_to(page_name):
     st.session_state.current_page = page_name
     st.rerun()
 
 # -----------------------------------------------------------------------------
-# 3. SIDEBAR NAVIGATION & REPO HEALTH MONITOR
+# 3. SIDEBAR NAVIGATION & SYSTEM ARTIFACT MONITOR
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("### 🫀 CardioSense AI")
-    st.caption("Clinical Decision Support Platform")
+    st.markdown(
+        """
+        <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.2rem;">
+            <span style="font-size:1.8rem;">🫀</span>
+            <div>
+                <h3 style="margin:0; font-weight:800; font-size:1.35rem; color:#F8FAFC;">CardioSense AI</h3>
+            </div>
+        </div>
+        <p style="color:#94A3B8; font-size:0.8rem; margin-top:0.1rem; margin-bottom:1.2rem;">
+            Clinical Decision Support Platform
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
     
     pages = [
         "Page 1: Home",
@@ -209,9 +212,17 @@ with st.sidebar:
         "Page 4: Model Comparison"
     ]
     
+    nav_icons = {
+        "Page 1: Home": "🏠 1. Overview & Protocol",
+        "Page 2: Patient Details": "🩺 2. Patient Clinical Intake",
+        "Page 3: Diagnostic Results": "📊 3. Diagnostic Report",
+        "Page 4: Model Comparison": "🏆 4. Model Benchmark Hub"
+    }
+
     selected_page = st.radio(
         "Workflow Navigation",
         options=pages,
+        format_func=lambda p: nav_icons.get(p, p),
         index=pages.index(st.session_state.current_page) if st.session_state.current_page in pages else 0,
         label_visibility="collapsed"
     )
@@ -228,12 +239,12 @@ with st.sidebar:
         if info["is_live"]:
             st.markdown(
                 f"""
-                <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.45rem;">
+                <div style="background: rgba(30, 41, 59, 0.65); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 9px; padding: 0.5rem 0.75rem; margin-bottom: 0.45rem;">
                     <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <span style="font-weight: 600; font-size: 0.88rem; color: #f8fafc;">🟢 {name}</span>
-                        <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; letter-spacing: 0.03em;">LIVE</span>
+                        <span style="font-weight: 600; font-size: 0.85rem; color: #F8FAFC;">🟢 {name}</span>
+                        <span style="background: rgba(16, 185, 129, 0.2); color: #10B981; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; font-weight: 700;">LIVE</span>
                     </div>
-                    <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem;">
+                    <div style="font-size: 0.73rem; color: #94A3B8; margin-top: 0.25rem;">
                         📁 <code>{info['filename']}</code>
                     </div>
                 </div>
@@ -243,12 +254,12 @@ with st.sidebar:
         else:
             st.markdown(
                 f"""
-                <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.45rem;">
+                <div style="background: rgba(30, 41, 59, 0.65); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 9px; padding: 0.5rem 0.75rem; margin-bottom: 0.45rem;">
                     <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <span style="font-weight: 600; font-size: 0.88rem; color: #f8fafc;">🟡 {name}</span>
-                        <span style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; letter-spacing: 0.03em;">MOCK</span>
+                        <span style="font-weight: 600; font-size: 0.85rem; color: #F8FAFC;">🟡 {name}</span>
+                        <span style="background: rgba(245, 158, 11, 0.2); color: #F59E0B; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; font-weight: 700;">MOCK</span>
                     </div>
-                    <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem;">
+                    <div style="font-size: 0.73rem; color: #94A3B8; margin-top: 0.25rem;">
                         ⚠️ Fallback active
                     </div>
                 </div>
@@ -257,43 +268,56 @@ with st.sidebar:
             )
             
     st.markdown("---")
-    st.markdown("#### 👥 Team Roles")
+    st.markdown("#### 👥 Development Team")
     st.markdown(
         """
-        <div class="team-badge">
-            <strong style="color:#f8fafc;">Rohit</strong><br>
-            <span style="color:#94a3b8; font-size:0.8rem;">ML Pipeline & Backend Lead</span>
+        <div class="team-card">
+            <span style="font-size:1.1rem;">💻</span>
+            <div>
+                <strong style="color:#F8FAFC; font-size:0.88rem;">Rohit</strong><br>
+                <span style="color:#94A3B8; font-size:0.75rem;">ML Pipeline & Backend Lead</span>
+            </div>
         </div>
-        <div class="team-badge">
-            <strong style="color:#f8fafc;">Om</strong><br>
-            <span style="color:#94a3b8; font-size:0.8rem;">EDA & Naive Bayes Lead</span>
+        <div class="team-card">
+            <span style="font-size:1.1rem;">📊</span>
+            <div>
+                <strong style="color:#F8FAFC; font-size:0.88rem;">Om</strong><br>
+                <span style="color:#94A3B8; font-size:0.75rem;">EDA & Naive Bayes Lead</span>
+            </div>
         </div>
-        <div class="team-badge">
-            <strong style="color:#38bdf8;">Umar</strong><br>
-            <span style="color:#38bdf8; font-size:0.8rem;">UI, Integration & Deployment Lead</span>
+        <div class="team-card">
+            <span style="font-size:1.1rem;">🎨</span>
+            <div>
+                <strong style="color:#38BDF8; font-size:0.88rem;">Umar</strong><br>
+                <span style="color:#38BDF8; font-size:0.75rem;">UI & Deployment Lead</span>
+            </div>
         </div>
         """,
         unsafe_allow_html=True
     )
     
-    st.caption("Cleveland Heart Disease Study | 303 Patients")
+    st.caption("UCI Cleveland Cohort • 303 Records")
 
-# -----------------------------------------------------------------------------
-# PAGE 1: HOME & PROJECT OVERVIEW
-# -----------------------------------------------------------------------------
+
+# =============================================================================
+# PAGE 1: HOME & CLINICAL PROTOCOL OVERVIEW
+# =============================================================================
 if st.session_state.current_page == "Page 1: Home":
     st.markdown('<div class="brand-title">CardioSense AI</div>', unsafe_allow_html=True)
-    st.markdown('<div class="brand-subtitle">Automated Machine Learning Diagnostic System for Early Coronary Artery Disease Detection</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="brand-subtitle">Automated Machine Learning Diagnostic System for Early Coronary Artery Disease Detection</div>',
+        unsafe_allow_html=True
+    )
 
-    # Hero stats row
+    # 4 Top Performance KPI Cards
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.markdown(
             """
             <div class="metric-card">
-                <div class="metric-number" style="color:#38bdf8;">303</div>
+                <div class="metric-number" style="color:#38BDF8;">303</div>
                 <div class="metric-label">Patient Cohort</div>
-                <small style="color:#64748b;">UCI Cleveland Clinical Records</small>
+                <small style="color:#64748B;">UCI Cleveland Clinical Records</small>
             </div>
             """, unsafe_allow_html=True
         )
@@ -301,9 +325,9 @@ if st.session_state.current_page == "Page 1: Home":
         st.markdown(
             """
             <div class="metric-card">
-                <div class="metric-number" style="color:#818cf8;">13</div>
+                <div class="metric-number" style="color:#818CF8;">13</div>
                 <div class="metric-label">Clinical Biomarkers</div>
-                <small style="color:#64748b;">Hemodynamic, ECG, Fluoroscopy</small>
+                <small style="color:#64748B;">Hemodynamic, ECG, Fluoroscopy</small>
             </div>
             """, unsafe_allow_html=True
         )
@@ -311,9 +335,9 @@ if st.session_state.current_page == "Page 1: Home":
         st.markdown(
             """
             <div class="metric-card">
-                <div class="metric-number" style="color:#c084fc;">3</div>
-                <div class="metric-label">ML Classifiers</div>
-                <small style="color:#64748b;">RF, Logistic Reg, Naive Bayes</small>
+                <div class="metric-number" style="color:#C084FC;">96.43%</div>
+                <div class="metric-label">Peak Screening Recall</div>
+                <small style="color:#64748B;">Gaussian Naive Bayes (Om)</small>
             </div>
             """, unsafe_allow_html=True
         )
@@ -321,85 +345,87 @@ if st.session_state.current_page == "Page 1: Home":
         st.markdown(
             """
             <div class="metric-card">
-                <div class="metric-number" style="color:#10b981;">90.16%</div>
-                <div class="metric-label">Top Benchmark Accuracy</div>
-                <small style="color:#64748b;">Random Forest Ensemble</small>
+                <div class="metric-number" style="color:#10B981;">90.16%</div>
+                <div class="metric-label">Champion Accuracy</div>
+                <small style="color:#64748B;">Random Forest (Rohit)</small>
             </div>
             """, unsafe_allow_html=True
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Project Narrative & Clinical Motivation
-    col_left, col_right = st.columns([1.6, 1.0])
+    # Clinical Motivation & Architecture
+    col_left, col_right = st.columns([1.5, 1.0])
     
     with col_left:
         st.markdown("### 🩺 Clinical Overview & Problem Statement")
         st.write(
             """
-            Cardiovascular diseases (CVDs) remain the leading cause of mortality globally, 
-            accounting for an estimated 17.9 million deaths annually. Traditional manual risk 
-            assessments rely heavily on subjective symptom interpretation and single-variable cutoffs, 
-            often missing early-stage ischemia and coronary blockages.
-
-            **CardioSense AI** bridges this clinical gap by integrating multi-modal patient biomarkers—ranging from 
-            exercise-induced ST depression and fluoroscopic vessel counts to resting hemodynamics—into trained 
-            probabilistic classification models.
+            Cardiovascular diseases (CVDs) represent the leading cause of global mortality.
+            Standard diagnostic pathways frequently struggle to synthesize non-linear interactions across
+            resting hemodynamics, exercise-induced ST segment shifts, and fluoroscopic major vessel counts.
+            
+            **CardioSense AI** provides deterministic, calibrated diagnostic risk assessments by applying
+            rigorously validated machine learning ensembles trained on the gold-standard UCI Cleveland dataset.
             """
         )
 
-        st.markdown("#### 🔬 Core Diagnostic Architecture")
+        st.markdown("#### 🔬 3-Stage Diagnostic Engine")
         st.markdown(
             """
-            1. **Intake & Preprocessing:** 13 verified clinical biomarkers are transformed and standardized via a calibrated `StandardScaler`.
-            2. **Multi-Model Inference:** Predictions are rendered via Random Forest, Logistic Regression, or Gaussian Naive Bayes with calibrated posterior probabilities.
-            3. **Decision Support & Action Items:** Patients receive an immediate risk classification (Low vs High) coupled with evidence-based dietary, lifestyle, and cardiology referral directives.
+            1. **Intake & Standardization:** 13 physiological biomarkers are normalized with a calibrated `StandardScaler`.
+            2. **Multi-Algorithm Inference:** Patient records are processed through Random Forest, Logistic Regression, or Gaussian Naive Bayes classifiers.
+            3. **Clinical Stratification:** Provides an immediate risk classification, disease probability percentage, and tailored action plans.
             """
         )
 
     with col_right:
         st.markdown("### 🚀 Fast Assessment")
-        st.info(
-            "Ready to test patient parameters? Start an interactive clinical intake session or explore model benchmarks."
-        )
-        if st.button("🩺 Start Patient Assessment", use_container_width=True, type="primary"):
+        st.info("Ready to evaluate a patient? Launch the clinical intake form or review benchmark comparisons.")
+        
+        if st.button("🩺 Start Patient Assessment", type="primary"):
             navigate_to("Page 2: Patient Details")
             
         st.markdown("<br>", unsafe_allow_html=True)
         
-        if st.button("📊 Explore Model Comparisons", use_container_width=True):
+        if st.button("📊 Explore Model Comparisons"):
             navigate_to("Page 4: Model Comparison")
 
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("#### 🔒 Reliability & Fallback Architecture")
         st.markdown(
             """
             <div style="background:rgba(30,41,59,0.5); padding:1rem; border-radius:10px; border:1px solid rgba(148,163,184,0.15);">
-                <span class="badge-live">Live ML Integration</span>
-                <p style="font-size:0.85rem; color:#94a3b8; margin-top:0.5rem; margin-bottom:0;">
-                    Connected to serialized teammate pipelines in <code>models/</code>. Equipped with an intelligent fallback heuristic engine ensuring zero crashes even during asynchronous model updates.
+                <span style="background:rgba(16,185,129,0.2); color:#10B981; font-weight:700; font-size:0.75rem; padding:2px 8px; border-radius:4px;">
+                    ● Live ML Integration
+                </span>
+                <p style="font-size:0.83rem; color:#94A3B8; margin-top:0.5rem; margin-bottom:0; line-height:1.4;">
+                    Directly linked to serialized <code>models/</code>. Equipped with zero-downtime heuristic fallbacks.
                 </p>
             </div>
             """,
             unsafe_allow_html=True
         )
 
-# -----------------------------------------------------------------------------
+
+# =============================================================================
 # PAGE 2: PATIENT DETAILS & CLINICAL INTAKE FORM
-# -----------------------------------------------------------------------------
+# =============================================================================
 elif st.session_state.current_page == "Page 2: Patient Details":
     st.markdown('<div class="brand-title">Patient Clinical Intake</div>', unsafe_allow_html=True)
-    st.markdown('<div class="brand-subtitle">Enter the 13 clinical biomarkers for algorithmic cardiac risk assessment</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="brand-subtitle">Enter the 13 clinical biomarkers for algorithmic cardiac risk assessment</div>',
+        unsafe_allow_html=True
+    )
 
     # Preset quick-load bar
     p_col1, p_col2, p_col3 = st.columns([1.5, 1.5, 3])
     with p_col1:
-        if st.button("🌿 Load Healthy Baseline Profile", use_container_width=True):
+        if st.button("🌿 Load Healthy Baseline Profile"):
             st.session_state.patient_input = PRESETS["Healthy"].copy()
             st.success("Loaded Healthy Patient Preset!")
             st.rerun()
     with p_col2:
-        if st.button("⚠️ Load High-Risk Cardiac Profile", use_container_width=True):
+        if st.button("⚠️ Load High-Risk Cardiac Profile"):
             st.session_state.patient_input = PRESETS["Elevated Risk"].copy()
             st.warning("Loaded High-Risk Patient Preset!")
             st.rerun()
@@ -420,7 +446,7 @@ elif st.session_state.current_page == "Page 2: Patient Details":
                 "1. Age (Years)",
                 min_value=20, max_value=90,
                 value=int(current.get("age", 54)),
-                help="Patient age at examination"
+                help="Patient age in years"
             )
 
             sex_opts = ["Male", "Female"]
@@ -445,7 +471,7 @@ elif st.session_state.current_page == "Page 2: Patient Details":
                 "3. Chest Pain Type (cp)",
                 options=list(cp_mapping.keys()),
                 index=cp_idx,
-                help="Asymptomatic angina (4) is strongly associated with ischemic heart disease"
+                help="Asymptomatic angina (4) is strongly associated with ischemic coronary disease"
             )
             cp = cp_mapping[cp_choice]
 
@@ -462,7 +488,7 @@ elif st.session_state.current_page == "Page 2: Patient Details":
                 min_value=100, max_value=600,
                 value=int(current.get("chol", 240)),
                 step=1,
-                help="Desirable cholesterol level is <200 mg/dl; elevated levels increase coronary plaque"
+                help="Desirable cholesterol level is <200 mg/dl"
             )
 
             fbs_choice = st.radio(
@@ -470,7 +496,7 @@ elif st.session_state.current_page == "Page 2: Patient Details":
                 options=["No (Normal ≤ 120 mg/dl)", "Yes (Elevated > 120 mg/dl)"],
                 index=1 if current.get("fbs", 0) == 1 else 0,
                 horizontal=True,
-                help="Indicator for diabetes or prediabetic metabolic condition"
+                help="Marker for diabetes or metabolic syndrome"
             )
             fbs = 1.0 if "Yes" in fbs_choice else 0.0
 
@@ -485,7 +511,7 @@ elif st.session_state.current_page == "Page 2: Patient Details":
                 "7. Resting ECG (restecg)",
                 options=list(restecg_mapping.keys()),
                 index=recg_idx,
-                help="Resting electrocardiogram status"
+                help="Resting electrocardiogram waveform interpretation"
             )
             restecg = restecg_mapping[restecg_choice]
 
@@ -497,7 +523,7 @@ elif st.session_state.current_page == "Page 2: Patient Details":
                 "8. Maximum Heart Rate Achieved (bpm)",
                 min_value=60, max_value=220,
                 value=int(current.get("thalach", 150)),
-                help="Maximum heart rate attained during graded treadmill stress testing"
+                help="Maximum heart rate attained during graded treadmill stress test"
             )
 
             exang_choice = st.radio(
@@ -505,7 +531,7 @@ elif st.session_state.current_page == "Page 2: Patient Details":
                 options=["No", "Yes"],
                 index=1 if current.get("exang", 0) == 1 else 0,
                 horizontal=True,
-                help="Ischemic chest pain provoked during physical exercise"
+                help="Ischemic chest pain provoked during physical exertion"
             )
             exang = 1.0 if exang_choice == "Yes" else 0.0
 
@@ -514,7 +540,7 @@ elif st.session_state.current_page == "Page 2: Patient Details":
                 min_value=0.0, max_value=6.5,
                 value=float(current.get("oldpeak", 1.0)),
                 step=0.1,
-                help="ST depression in mm relative to baseline rest; values >1.0 mm signal myocardial ischemia"
+                help="ST depression in mm relative to rest baseline; values ≥1.0 mm signal myocardial ischemia"
             )
 
             slope_mapping = {
@@ -533,7 +559,7 @@ elif st.session_state.current_page == "Page 2: Patient Details":
             slope = slope_mapping[slope_choice]
 
             ca = st.slider(
-                "12. Number of Major Vessels Colored by Fluoroscopy (0 - 3)",
+                "12. Major Vessels Colored by Fluoroscopy (0 - 3)",
                 min_value=0, max_value=3,
                 value=int(current.get("ca", 0)),
                 help="Number of major coronary blood vessels visualized with contrast agent"
@@ -567,7 +593,7 @@ elif st.session_state.current_page == "Page 2: Patient Details":
             ]
             default_m_idx = model_options.index(st.session_state.selected_model_name) if st.session_state.selected_model_name in model_options else 0
             chosen_model = st.selectbox(
-                "Choose Machine Learning Model for Evaluation:",
+                "Choose Machine Learning Model for Diagnostic Inference:",
                 options=model_options,
                 index=default_m_idx
             )
@@ -577,12 +603,18 @@ elif st.session_state.current_page == "Page 2: Patient Details":
             st.markdown("<br>", unsafe_allow_html=True)
             model_reg = model_service.get_available_models().get(chosen_model, {})
             if model_reg.get("is_live", False):
-                st.markdown('<span class="badge-live">● Live Serialized Artifact Ready</span>', unsafe_allow_html=True)
+                st.markdown(
+                    '<span style="background:rgba(16,185,129,0.2); color:#10B981; font-weight:700; font-size:0.8rem; padding:4px 10px; border-radius:6px;">● Live Serialized Artifact Ready</span>',
+                    unsafe_allow_html=True
+                )
             else:
-                st.markdown('<span class="badge-fallback">⚡ Graceful Heuristic Fallback Active</span>', unsafe_allow_html=True)
+                st.markdown(
+                    '<span style="background:rgba(245,158,11,0.2); color:#F59E0B; font-weight:700; font-size:0.8rem; padding:4px 10px; border-radius:6px;">⚡ Graceful Fallback Engine Active</span>',
+                    unsafe_allow_html=True
+                )
 
         st.markdown("<br>", unsafe_allow_html=True)
-        submitted = st.form_submit_button("🩺 Run Diagnostic Prediction", use_container_width=True, type="primary")
+        submitted = st.form_submit_button("🩺 Run Diagnostic Prediction", type="primary")
 
     if submitted:
         patient_dict = {
@@ -593,25 +625,29 @@ elif st.session_state.current_page == "Page 2: Patient Details":
         }
         st.session_state.patient_input = patient_dict
 
-        with st.spinner("Processing clinical biomarkers and calculating probability..."):
+        with st.spinner("Standardizing biomarkers and calculating calibrated risk..."):
             res = model_service.predict_patient(patient_dict, model_name=chosen_model)
             st.session_state.prediction_result = res
 
         navigate_to("Page 3: Diagnostic Results")
 
-# -----------------------------------------------------------------------------
-# PAGE 3: DIAGNOSTIC RESULTS
-# -----------------------------------------------------------------------------
+
+# =============================================================================
+# PAGE 3: DIAGNOSTIC RESULTS & CLINICAL REPORT
+# =============================================================================
 elif st.session_state.current_page == "Page 3: Diagnostic Results":
     st.markdown('<div class="brand-title">Diagnostic Results & Risk Stratification</div>', unsafe_allow_html=True)
-    st.markdown('<div class="brand-subtitle">Evidence-based clinical risk analysis generated from patient biomarkers</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="brand-subtitle">Evidence-based clinical risk analysis generated from patient biomarkers</div>',
+        unsafe_allow_html=True
+    )
 
     res = st.session_state.prediction_result
     patient = st.session_state.patient_input
 
     if res is None:
         st.warning("No diagnostic results found. Please enter patient biomarkers on Page 2 first.")
-        if st.button("Go to Patient Details Form"):
+        if st.button("⬅️ Go to Patient Intake Form"):
             navigate_to("Page 2: Patient Details")
     else:
         is_positive = res["has_heart_disease"]
@@ -623,12 +659,12 @@ elif st.session_state.current_page == "Page 3: Diagnostic Results":
             st.markdown(
                 f"""
                 <div class="alert-high-risk">
-                    <h3 style="margin:0 0 0.3rem 0; color:#fecaca; display:flex; align-items:center; gap:0.5rem;">
+                    <h3 style="margin:0 0 0.3rem 0; color:#FECACA; font-weight:800; display:flex; align-items:center; gap:0.5rem;">
                         ⚠️ Heart Disease Risk Detected (Positive Diagnosis)
                     </h3>
                     <p style="margin:0; font-size:1.05rem; opacity:0.95;">
-                        The diagnostic model identifies significant physiological indicators consistent with coronary artery disease. 
-                        Calculated probability: <strong>{prob_pct:.1f}%</strong> via <strong>{model_used}</strong>.
+                        Biomarkers indicate clinical indicators consistent with ischemic heart disease. 
+                        Calculated probability: <strong style="color:#EF4444; font-size:1.2rem;">{prob_pct:.1f}%</strong> via <strong>{model_used}</strong>.
                     </p>
                 </div>
                 """,
@@ -638,12 +674,12 @@ elif st.session_state.current_page == "Page 3: Diagnostic Results":
             st.markdown(
                 f"""
                 <div class="alert-normal">
-                    <h3 style="margin:0 0 0.3rem 0; color:#a7f3d0; display:flex; align-items:center; gap:0.5rem;">
+                    <h3 style="margin:0 0 0.3rem 0; color:#A7F3D0; font-weight:800; display:flex; align-items:center; gap:0.5rem;">
                         ✅ Low Cardiac Risk (Normal Diagnostic Profile)
                     </h3>
                     <p style="margin:0; font-size:1.05rem; opacity:0.95;">
-                        Patient biomarkers remain within normal physiological baselines. 
-                        Calculated disease probability: <strong>{prob_pct:.1f}%</strong> via <strong>{model_used}</strong>.
+                        Patient biomarkers remain within healthy baselines. 
+                        Calculated disease probability: <strong style="color:#10B981; font-size:1.2rem;">{prob_pct:.1f}%</strong> via <strong>{model_used}</strong>.
                     </p>
                 </div>
                 """,
@@ -656,17 +692,16 @@ elif st.session_state.current_page == "Page 3: Diagnostic Results":
         with col_gauge:
             st.markdown("#### 🎯 Disease Probability Gauge")
             
-            # Interactive Plotly Gauge or Progress Bar Fallback
             if HAS_PLOTLY and go is not None:
                 gauge_fig = go.Figure(go.Indicator(
-                    mode="gauge+number+delta",
+                    mode="gauge+number",
                     value=prob_pct,
                     domain={'x': [0, 1], 'y': [0, 1]},
-                    title={'text': "Risk Probability (%)", 'font': {'size': 20, 'color': '#f8fafc'}},
-                    number={'suffix': "%", 'font': {'size': 38, 'color': '#ffffff'}},
+                    title={'text': "Calculated Risk Probability", 'font': {'size': 18, 'color': '#F8FAFC'}},
+                    number={'suffix': "%", 'font': {'size': 38, 'color': '#FFFFFF'}},
                     gauge={
-                        'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#94a3b8"},
-                        'bar': {'color': "#ef4444" if is_positive else "#10b981", 'thickness': 0.3},
+                        'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#94A3B8"},
+                        'bar': {'color': "#EF4444" if is_positive else "#10B981", 'thickness': 0.35},
                         'bgcolor': "rgba(30, 41, 59, 0.5)",
                         'borderwidth': 1,
                         'bordercolor': "#475569",
@@ -676,7 +711,7 @@ elif st.session_state.current_page == "Page 3: Diagnostic Results":
                             {'range': [70, 100], 'color': "rgba(239, 68, 68, 0.25)"}
                         ],
                         'threshold': {
-                            'line': {'color': "#f87171", 'width': 4},
+                            'line': {'color': "#F87171", 'width': 4},
                             'thickness': 0.8,
                             'value': 50.0
                         }
@@ -685,13 +720,13 @@ elif st.session_state.current_page == "Page 3: Diagnostic Results":
                 gauge_fig.update_layout(
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)",
-                    font={'color': "#f8fafc", 'family': "Outfit"},
+                    font={'color': "#F8FAFC", 'family': "Plus Jakarta Sans"},
                     height=320,
-                    margin=dict(l=20, r=20, t=40, b=20)
+                    margin=dict(l=20, r=20, t=30, b=20)
                 )
-                st.plotly_chart(gauge_fig, use_container_width=True)
+                st.plotly_chart(gauge_fig)
             else:
-                st.progress(float(prob_val))
+                st.progress(float(res.get("probability", 0.0)))
                 st.metric("Risk Probability", f"{prob_pct:.2f}%")
 
         with col_info:
@@ -699,24 +734,24 @@ elif st.session_state.current_page == "Page 3: Diagnostic Results":
             st.markdown(
                 f"""
                 <div class="metric-card">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
-                        <span style="color:#94a3b8; font-weight:500;">Risk Category</span>
-                        <strong style="color:{'#ef4444' if is_positive else '#10b981'}; font-size:1.15rem;">
-                            {'High Risk' if is_positive else 'Low Risk'}
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                        <span style="color:#94A3B8; font-weight:500;">Risk Category</span>
+                        <strong style="color:{'#EF4444' if is_positive else '#10B981'}; font-size:1.15rem;">
+                            {'High Risk (Presence)' if is_positive else 'Low Risk (Healthy)'}
                         </strong>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
-                        <span style="color:#94a3b8; font-weight:500;">Binary Prediction</span>
-                        <span style="color:#f8fafc; font-weight:600;">Class {res['prediction']} ({'Disease' if is_positive else 'Healthy'})</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                        <span style="color:#94A3B8; font-weight:500;">Binary Prediction</span>
+                        <span style="color:#F8FAFC; font-weight:600;">Class {res['prediction']} ({'Disease' if is_positive else 'No Disease'})</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
-                        <span style="color:#94a3b8; font-weight:500;">Classifier Engine</span>
-                        <span style="color:#38bdf8; font-weight:600;">{model_used}</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                        <span style="color:#94A3B8; font-weight:500;">Inference Model</span>
+                        <span style="color:#38BDF8; font-weight:600;">{model_used}</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-                        <span style="color:#94a3b8; font-weight:500;">Inference Mode</span>
-                        <span style="color:{'#f59e0b' if res.get('is_mock') else '#10b981'}; font-weight:600;">
-                            {'⚡ Fallback Mock Heuristic' if res.get('is_mock') else '🟢 Live Scaled Pipeline'}
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+                        <span style="color:#94A3B8; font-weight:500;">Execution Pipeline</span>
+                        <span style="color:{'#F59E0B' if res.get('is_mock') else '#10B981'}; font-weight:600;">
+                            {'⚡ Fallback Mock Engine' if res.get('is_mock') else '🟢 Live Scaled Pipeline'}
                         </span>
                     </div>
                 </div>
@@ -725,9 +760,9 @@ elif st.session_state.current_page == "Page 3: Diagnostic Results":
             )
             
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("#### 💡 Clinical Recommendations")
+            st.markdown("#### 💡 Clinical Action Directives")
             for rec in res.get("recommendations", []):
-                st.markdown(f"- 🩺 {rec}")
+                st.info(f"• {rec}")
 
         st.markdown("---")
 
@@ -736,7 +771,7 @@ elif st.session_state.current_page == "Page 3: Diagnostic Results":
         
         b1, b2, b3, b4 = st.columns(4)
         with b1:
-            st.metric("Age / Sex", f"{int(patient.get('age', 0))} yrs / {'M' if patient.get('sex', 0) == 1 else 'F'}")
+            st.metric("Age / Sex", f"{int(patient.get('age', 0))} yrs / {'Male' if patient.get('sex', 0) == 1 else 'Female'}")
             st.metric("Resting Blood Pressure", f"{int(patient.get('trestbps', 0))} mm Hg", delta="Elevated" if patient.get("trestbps", 0) > 130 else "Normal", delta_color="inverse")
         with b2:
             st.metric("Serum Cholesterol", f"{int(patient.get('chol', 0))} mg/dl", delta="Elevated" if patient.get("chol", 0) > 200 else "Desirable", delta_color="inverse")
@@ -753,23 +788,27 @@ elif st.session_state.current_page == "Page 3: Diagnostic Results":
         # Action Buttons
         btn_c1, btn_c2, btn_c3 = st.columns(3)
         with btn_c1:
-            if st.button("🔄 Test Another Model on This Patient", use_container_width=True):
+            if st.button("🔄 Test Another Model on This Patient"):
                 navigate_to("Page 2: Patient Details")
         with btn_c2:
-            if st.button("📝 Perform New Patient Assessment", use_container_width=True):
+            if st.button("📝 Perform New Patient Assessment"):
                 st.session_state.patient_input = PRESETS["Healthy"].copy()
                 st.session_state.prediction_result = None
                 navigate_to("Page 2: Patient Details")
         with btn_c3:
-            if st.button("📊 View Model Comparison Benchmarks", use_container_width=True, type="primary"):
+            if st.button("📊 View Model Comparison Benchmarks", type="primary"):
                 navigate_to("Page 4: Model Comparison")
 
-# -----------------------------------------------------------------------------
-# PAGE 4: MODEL COMPARISON & ANALYTICS
-# -----------------------------------------------------------------------------
+
+# =============================================================================
+# PAGE 4: MODEL COMPARISON & BENCHMARK HUB
+# =============================================================================
 elif st.session_state.current_page == "Page 4: Model Comparison":
     st.markdown('<div class="brand-title">Comparative Algorithm Performance</div>', unsafe_allow_html=True)
-    st.markdown('<div class="brand-subtitle">Quantitative evaluation of Logistic Regression, Random Forest, and Gaussian Naive Bayes</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="brand-subtitle">Quantitative evaluation of Logistic Regression, Random Forest, and Gaussian Naive Bayes</div>',
+        unsafe_allow_html=True
+    )
 
     metrics_dict = model_service.get_metrics()
     models_data = metrics_dict.get("models", {})
@@ -784,12 +823,12 @@ elif st.session_state.current_page == "Page 4: Model Comparison":
     with k1:
         st.markdown(
             f"""
-            <div class="metric-card">
-                <div style="font-weight:700; color:#38bdf8; font-size:1.1rem; margin-bottom:0.4rem;">🌲 Random Forest</div>
-                <div class="metric-number">{rf_m.get('test_accuracy', 0.9016)*100:.2f}%</div>
+            <div class="metric-card" style="border: 2px solid rgba(56, 189, 248, 0.4);">
+                <div style="font-weight:700; color:#38BDF8; font-size:1.1rem; margin-bottom:0.4rem;">🌲 Random Forest (Champion)</div>
+                <div class="metric-number" style="color:#38BDF8;">{rf_m.get('test_accuracy', 0.9016)*100:.2f}%</div>
                 <div class="metric-label">Test Accuracy</div>
-                <div style="margin-top:0.6rem; font-size:0.85rem; color:#94a3b8;">
-                    F1-Score: <strong>{rf_m.get('f1_score', 0.8966)*100:.1f}%</strong> | Recall: <strong>{rf_m.get('recall', 0.9286)*100:.1f}%</strong>
+                <div style="margin-top:0.6rem; font-size:0.85rem; color:#94A3B8;">
+                    F1-Score: <strong style="color:#F8FAFC;">{rf_m.get('f1_score', 0.8966)*100:.1f}%</strong> | Recall: <strong style="color:#F8FAFC;">{rf_m.get('recall', 0.9286)*100:.1f}%</strong>
                 </div>
             </div>
             """,
@@ -800,11 +839,11 @@ elif st.session_state.current_page == "Page 4: Model Comparison":
         st.markdown(
             f"""
             <div class="metric-card">
-                <div style="font-weight:700; color:#818cf8; font-size:1.1rem; margin-bottom:0.4rem;">📈 Logistic Regression</div>
-                <div class="metric-number">{lr_m.get('test_accuracy', 0.8689)*100:.2f}%</div>
+                <div style="font-weight:700; color:#818CF8; font-size:1.1rem; margin-bottom:0.4rem;">📈 Logistic Regression (Baseline)</div>
+                <div class="metric-number" style="color:#818CF8;">{lr_m.get('test_accuracy', 0.8689)*100:.2f}%</div>
                 <div class="metric-label">Test Accuracy</div>
-                <div style="margin-top:0.6rem; font-size:0.85rem; color:#94a3b8;">
-                    F1-Score: <strong>{lr_m.get('f1_score', 0.8667)*100:.1f}%</strong> | Recall: <strong>{lr_m.get('recall', 0.9286)*100:.1f}%</strong>
+                <div style="margin-top:0.6rem; font-size:0.85rem; color:#94A3B8;">
+                    F1-Score: <strong style="color:#F8FAFC;">{lr_m.get('f1_score', 0.8667)*100:.1f}%</strong> | Recall: <strong style="color:#F8FAFC;">{lr_m.get('recall', 0.9286)*100:.1f}%</strong>
                 </div>
             </div>
             """,
@@ -815,11 +854,11 @@ elif st.session_state.current_page == "Page 4: Model Comparison":
         st.markdown(
             f"""
             <div class="metric-card">
-                <div style="font-weight:700; color:#c084fc; font-size:1.1rem; margin-bottom:0.4rem;">⚡ Gaussian Naive Bayes</div>
-                <div class="metric-number">{nb_m.get('test_accuracy', 0.8689)*100:.2f}%</div>
+                <div style="font-weight:700; color:#C084FC; font-size:1.1rem; margin-bottom:0.4rem;">⚡ Gaussian Naive Bayes (Om)</div>
+                <div class="metric-number" style="color:#C084FC;">{nb_m.get('test_accuracy', 0.8689)*100:.2f}%</div>
                 <div class="metric-label">Test Accuracy</div>
-                <div style="margin-top:0.6rem; font-size:0.85rem; color:#94a3b8;">
-                    F1-Score: <strong>{nb_m.get('f1_score', 0.8710)*100:.1f}%</strong> | Recall: <strong style="color:#10b981;">{nb_m.get('recall', 0.9643)*100:.1f}% (Top)</strong>
+                <div style="margin-top:0.6rem; font-size:0.85rem; color:#94A3B8;">
+                    F1-Score: <strong style="color:#F8FAFC;">{nb_m.get('f1_score', 0.8710)*100:.1f}%</strong> | Recall: <strong style="color:#10B981;">{nb_m.get('recall', 0.9643)*100:.1f}% (Top Sensitivity)</strong>
                 </div>
             </div>
             """,
@@ -852,7 +891,7 @@ elif st.session_state.current_page == "Page 4: Model Comparison":
             })
 
     df_comp = pd.DataFrame(rows)
-    st.dataframe(df_comp, use_container_width=True, hide_index=True)
+    st.dataframe(df_comp, hide_index=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -880,13 +919,13 @@ elif st.session_state.current_page == "Page 4: Model Comparison":
             color="Model",
             barmode="group",
             text="Score (%)",
-            color_discrete_sequence=["#38bdf8", "#818cf8", "#c084fc"]
+            color_discrete_sequence=["#38BDF8", "#818CF8", "#C084FC"]
         )
         
         fig.update_layout(
             plot_bgcolor="rgba(15, 23, 42, 0.4)",
             paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#f8fafc", family="Outfit"),
+            font=dict(color="#F8FAFC", family="Plus Jakarta Sans"),
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
@@ -896,13 +935,13 @@ elif st.session_state.current_page == "Page 4: Model Comparison":
             ),
             yaxis=dict(range=[60, 100], gridcolor="rgba(148, 163, 184, 0.15)"),
             xaxis=dict(gridcolor="rgba(148, 163, 184, 0.1)"),
-            height=420,
+            height=400,
             margin=dict(l=20, r=20, t=40, b=20)
         )
         fig.update_traces(textposition='outside', textfont_size=11)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig)
     else:
-        st.dataframe(df_plot, use_container_width=True)
+        st.dataframe(df_plot)
 
     st.markdown("---")
 
@@ -913,21 +952,21 @@ elif st.session_state.current_page == "Page 4: Model Comparison":
     with tab1:
         cm_path = os.path.join("assets", "confusion_matrix.png")
         if os.path.exists(cm_path):
-            st.image(cm_path, caption="Confusion Matrices: Logistic Regression vs Random Forest (Test Set)", use_container_width=True)
+            st.image(cm_path, caption="Confusion Matrices: Logistic Regression vs Random Forest vs Naive Bayes")
         else:
             st.info("Confusion matrix asset not found in assets/ directory.")
 
     with tab2:
         roc_path = os.path.join("assets", "roc_curve.png")
         if os.path.exists(roc_path):
-            st.image(roc_path, caption="Receiver Operating Characteristic (ROC-AUC) Curves", use_container_width=True)
+            st.image(roc_path, caption="Receiver Operating Characteristic (ROC-AUC) Curves")
         else:
             st.info("ROC Curve asset not found in assets/ directory.")
 
     with tab3:
         fi_path = os.path.join("assets", "feature_importance.png")
         if os.path.exists(fi_path):
-            st.image(fi_path, caption="Biomarker Gini Importance Scores (Random Forest Classifier)", use_container_width=True)
+            st.image(fi_path, caption="Biomarker Gini Importance Scores (Random Forest Classifier)")
         else:
             st.info("Feature importance asset not found in assets/ directory.")
 
@@ -937,7 +976,7 @@ elif st.session_state.current_page == "Page 4: Model Comparison":
     st.markdown("### 🏥 Clinical Tradeoff Insights: Precision vs. Recall")
     st.info(
         """
-        **Why Recall (Sensitivity) is Critical in Cardiology:**
+        **Why Recall (Sensitivity) is Paramount in Cardiology:**
         - **False Negative (FN) Cost:** Missing an actual heart disease patient leads to untreated coronary artery disease, potentially causing sudden myocardial infarction or death.
         - **False Positive (FP) Cost:** Misclassifying a healthy patient as positive triggers harmless non-invasive follow-up tests (e.g. Echocardiogram, Stress ECG).
         - **Model Takeaway:** Gaussian Naive Bayes achieves an exceptional **96.43% Recall**, making it an ideal rapid screening filter, while Random Forest provides the highest overall accuracy (**90.16%**) and balanced F1-score (**89.66%**).
