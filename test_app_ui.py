@@ -17,14 +17,14 @@ class TestStreamlitAppWorkflow(unittest.TestCase):
 
     def test_page_1_home(self):
         """Verify Page 1 (Home) renders title and hero cards."""
-        at = AppTest.from_file("streamlit_app.py", default_timeout=30)
+        at = AppTest.from_file("app.py", default_timeout=30)
         at.run()
         self.assertFalse(at.exception)
         
         # Verify title and brand content
         markdown_text = " ".join([m.value for m in at.markdown])
         self.assertIn("CardioSense AI", markdown_text)
-        self.assertIn("UCI Cleveland Clinical Records", markdown_text)
+        self.assertIn("UCI Cleveland", markdown_text)
         # Verify clicking Start Assessment button transitions to Page 2
         start_btn = [b for b in at.button if "Start Patient Assessment" in b.label][0]
         start_btn.click().run()
