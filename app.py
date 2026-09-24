@@ -226,25 +226,51 @@ with st.sidebar:
     avail_models = model_service.get_available_models()
     for name, info in avail_models.items():
         if info["is_live"]:
-            st.markdown(f"🟢 **{name}**  \n`<small style='color:#10b981;'>Live Artifact: {info['filename']}</small>`", unsafe_allow_html=True)
+            st.markdown(
+                f"""
+                <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.45rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-weight: 600; font-size: 0.88rem; color: #f8fafc;">🟢 {name}</span>
+                        <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; letter-spacing: 0.03em;">LIVE</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem;">
+                        📁 <code>{info['filename']}</code>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         else:
-            st.markdown(f"🟡 **{name}**  \n`<small style='color:#f59e0b;'>Mock Fallback Active</small>`", unsafe_allow_html=True)
+            st.markdown(
+                f"""
+                <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.45rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-weight: 600; font-size: 0.88rem; color: #f8fafc;">🟡 {name}</span>
+                        <span style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; letter-spacing: 0.03em;">MOCK</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem;">
+                        ⚠️ Fallback active
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
             
     st.markdown("---")
     st.markdown("#### 👥 Team Roles")
     st.markdown(
         """
         <div class="team-badge">
-            <strong>Rohit</strong><br>
-            <small style="color:#94a3b8;">ML Pipeline & Backend Lead</small>
+            <strong style="color:#f8fafc;">Rohit</strong><br>
+            <span style="color:#94a3b8; font-size:0.8rem;">ML Pipeline & Backend Lead</span>
         </div>
         <div class="team-badge">
-            <strong>Om</strong><br>
-            <small style="color:#94a3b8;">EDA & Naive Bayes Lead</small>
+            <strong style="color:#f8fafc;">Om</strong><br>
+            <span style="color:#94a3b8; font-size:0.8rem;">EDA & Naive Bayes Lead</span>
         </div>
         <div class="team-badge">
-            <strong>Umar</strong><br>
-            <small style="color:#38bdf8;">UI, Integration & Deployment Lead</small>
+            <strong style="color:#38bdf8;">Umar</strong><br>
+            <span style="color:#38bdf8; font-size:0.8rem;">UI, Integration & Deployment Lead</span>
         </div>
         """,
         unsafe_allow_html=True
