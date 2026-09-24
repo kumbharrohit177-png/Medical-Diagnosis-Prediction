@@ -10,8 +10,14 @@ import json
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
-import plotly.express as px
+try:
+    import plotly.graph_objects as go
+    import plotly.express as px
+    HAS_PLOTLY = True
+except ImportError:
+    go = None
+    px = None
+    HAS_PLOTLY = False
 
 import model_service
 
@@ -624,39 +630,43 @@ elif st.session_state.current_page == "Page 3: Diagnostic Results":
         with col_gauge:
             st.markdown("#### 🎯 Disease Probability Gauge")
             
-            # Interactive Plotly Gauge
-            gauge_fig = go.Figure(go.Indicator(
-                mode="gauge+number+delta",
-                value=prob_pct,
-                domain={'x': [0, 1], 'y': [0, 1]},
-                title={'text': "Risk Probability (%)", 'font': {'size': 20, 'color': '#f8fafc'}},
-                number={'suffix': "%", 'font': {'size': 38, 'color': '#ffffff'}},
-                gauge={
-                    'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#94a3b8"},
-                    'bar': {'color': "#ef4444" if is_positive else "#10b981", 'thickness': 0.3},
-                    'bgcolor': "rgba(30, 41, 59, 0.5)",
-                    'borderwidth': 1,
-                    'bordercolor': "#475569",
-                    'steps': [
-                        {'range': [0, 40], 'color': "rgba(16, 185, 129, 0.25)"},
-                        {'range': [40, 70], 'color': "rgba(245, 158, 11, 0.25)"},
-                        {'range': [70, 100], 'color': "rgba(239, 68, 68, 0.25)"}
-                    ],
-                    'threshold': {
-                        'line': {'color': "#f87171", 'width': 4},
-                        'thickness': 0.8,
-                        'value': 50.0
+            # Interactive Plotly Gauge or Progress Bar Fallback
+            if HAS_PLOTLY and go is not None:
+                gauge_fig = go.Figure(go.Indicator(
+                    mode="gauge+number+delta",
+                    value=prob_pct,
+                    domain={'x': [0, 1], 'y': [0, 1]},
+                    title={'text': "Risk Probability (%)", 'font': {'size': 20, 'color': '#f8fafc'}},
+                    number={'suffix': "%", 'font': {'size': 38, 'color': '#ffffff'}},
+                    gauge={
+                        'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#94a3b8"},
+                        'bar': {'color': "#ef4444" if is_positive else "#10b981", 'thickness': 0.3},
+                        'bgcolor': "rgba(30, 41, 59, 0.5)",
+                        'borderwidth': 1,
+                        'bordercolor': "#475569",
+                        'steps': [
+                            {'range': [0, 40], 'color': "rgba(16, 185, 129, 0.25)"},
+                            {'range': [40, 70], 'color': "rgba(245, 158, 11, 0.25)"},
+                            {'range': [70, 100], 'color': "rgba(239, 68, 68, 0.25)"}
+                        ],
+                        'threshold': {
+                            'line': {'color': "#f87171", 'width': 4},
+                            'thickness': 0.8,
+                            'value': 50.0
+                        }
                     }
-                }
-            ))
-            gauge_fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                font={'color': "#f8fafc", 'family': "Outfit"},
-                height=320,
-                margin=dict(l=20, r=20, t=40, b=20)
-            )
-            st.plotly_chart(gauge_fig, use_container_width=True)
+                ))
+                gauge_fig.update_layout(
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font={'color': "#f8fafc", 'family': "Outfit"},
+                    height=320,
+                    margin=dict(l=20, r=20, t=40, b=20)
+                )
+                st.plotly_chart(gauge_fig, use_container_width=True)
+            else:
+                st.progress(float(prob_val))
+                st.metric("Risk Probability", f"{prob_pct:.2f}%")
 
         with col_info:
             st.markdown("#### 📊 Diagnostic Summary Card")
@@ -836,35 +846,37 @@ elif st.session_state.current_page == "Page 4: Model Comparison":
             
     df_plot = pd.DataFrame(plot_data)
     
-    fig = px.bar(
-        df_plot,
-        x="Metric",
-        y="Score (%)",
-        color="Model",
-        barmode="group",
-        text="Score (%)",
-        color_discrete_sequence=["#38bdf8", "#818cf8", "#c084fc"]
-    )
-    
-    fig.update_layout(
-        plot_bgcolor="rgba(15, 23, 42, 0.4)",
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#f8fafc", family="Outfit"),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1
-        ),
-        yaxis=dict(range=[60, 100], gridcolor="rgba(148, 163, 184, 0.15)"),
-        xaxis=dict(gridcolor="rgba(148, 163, 184, 0.1)"),
-        height=420,
-        margin=dict(l=20, r=20, t=40, b=20)
-    )
-    fig.update_traces(textposition='outside', textfont_size=11)
-    
-    st.plotly_chart(fig, use_container_width=True)
+    if HAS_PLOTLY and px is not None:
+        fig = px.bar(
+            df_plot,
+            x="Metric",
+            y="Score (%)",
+            color="Model",
+            barmode="group",
+            text="Score (%)",
+            color_discrete_sequence=["#38bdf8", "#818cf8", "#c084fc"]
+        )
+        
+        fig.update_layout(
+            plot_bgcolor="rgba(15, 23, 42, 0.4)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#f8fafc", family="Outfit"),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            ),
+            yaxis=dict(range=[60, 100], gridcolor="rgba(148, 163, 184, 0.15)"),
+            xaxis=dict(gridcolor="rgba(148, 163, 184, 0.1)"),
+            height=420,
+            margin=dict(l=20, r=20, t=40, b=20)
+        )
+        fig.update_traces(textposition='outside', textfont_size=11)
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.dataframe(df_plot, use_container_width=True)
 
     st.markdown("---")
 
