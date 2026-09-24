@@ -64,6 +64,13 @@ class TestCentralModelIntegration(unittest.TestCase):
         self.assertIn("Logistic Regression", res_lr["model_used"])
         self.assertIn("Random Forest", res_rf["model_used"])
         print(f"[PASS] Model Queries: LR={res_lr['probability_percent']}%, RF={res_rf['probability_percent']}%")
+        
+        # Test Om's Naive Bayes model if artifact exists
+        import os
+        if os.path.exists(os.path.join(model_service.MODELS_DIR, "naive_bayes.pkl")):
+            res_nb = model_service.predict_patient(patient, model_name="naive_bayes.pkl")
+            self.assertIn("Naive Bayes", res_nb["model_used"])
+            print(f"[PASS] Model Queries: NB={res_nb['probability_percent']}% (Risk: {res_nb['risk_level']})")
 
 
 if __name__ == "__main__":

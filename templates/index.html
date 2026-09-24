@@ -50,6 +50,18 @@
                 </div>
 
                 <form id="diagnosisForm" method="POST" action="/predict">
+                    <!-- Model Selection -->
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="model_name" style="font-weight: 600; color: #63b3ed;">🧠 Select Machine Learning Model</label>
+                        <select id="model_name" name="model_name">
+                            <option value="best_model.pkl" {% if not form_data or form_data.model_name == 'best_model.pkl' %}selected{% endif %}>🏆 Champion Model (Random Forest - 90.2% Accuracy)</option>
+                            <option value="naive_bayes.pkl" {% if form_data and form_data.model_name == 'naive_bayes.pkl' %}selected{% endif %}>⚡ Gaussian Naive Bayes (Om - 89.3% Recall)</option>
+                            <option value="logistic_regression.pkl" {% if form_data and form_data.model_name == 'logistic_regression.pkl' %}selected{% endif %}>📊 Logistic Regression (Rohit - 86.9% Accuracy)</option>
+                            <option value="random_forest.pkl" {% if form_data and form_data.model_name == 'random_forest.pkl' %}selected{% endif %}>🌲 Random Forest Ensemble (Rohit)</option>
+                        </select>
+                        <small>Switch dynamically between Rohit's models and Om's Gaussian Naive Bayes</small>
+                    </div>
+
                     <div class="form-grid">
                         <!-- Demographics -->
                         <div class="form-group">
@@ -194,6 +206,9 @@
                         <div>
                             <h3 class="status-title">{{ result.diagnosis_title }}</h3>
                             <p class="status-desc">{{ result.diagnosis_text }}</p>
+                            <div style="margin-top: 8px; font-size: 0.82rem; color: #a0aec0;">
+                                Inferred via: <strong style="color: #63b3ed;">{{ result.model_used }}</strong>
+                            </div>
                         </div>
                     </div>
 
@@ -255,7 +270,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>Lead: <strong>Rohit (ML & Integration Lead)</strong> | Medical Diagnosis Prediction Project | Powered by Scikit-Learn & Flask</p>
+        <p>CardioSense AI Team: <strong>Rohit (ML & Central Integration Lead)</strong> &bull; <strong>Om (EDA & Gaussian Naive Bayes Lead)</strong> &bull; <strong>Umar (UI Lead)</strong> | Medical Diagnosis Prediction Project | Powered by Scikit-Learn & Flask</p>
     </footer>
 
     <script>

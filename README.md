@@ -220,6 +220,9 @@ Medical-Diagnosis-Prediction/
 │   └── heart_disease.csv            # UCI Cleveland Heart Disease Dataset
 ├── models/
 │   ├── best_model.pkl               # Serialized Random Forest Model
+│   ├── logistic_regression.pkl      # Serialized Logistic Regression Model
+│   ├── random_forest.pkl            # Serialized Random Forest Model
+│   ├── naive_bayes.pkl              # Serialized Gaussian Naive Bayes Model (Om)
 │   ├── scaler.pkl                   # Preprocessing StandardScaler
 │   └── metrics.json                 # Model evaluation metrics & metadata
 ├── assets/
