@@ -34,7 +34,7 @@
             "f1_score": 0.896551724137931,
             "roc_auc": 0.9545454545454546
         },
-        "gaussian_naive_bayes": {
+        "naive_bayes": {
             "model_name": "Gaussian Naive Bayes",
             "train_accuracy": 0.8512396694214877,
             "test_accuracy": 0.8688524590163934,
